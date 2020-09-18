@@ -9,7 +9,8 @@ const API_TOKEN = process.env.API_TOKEN;
 
 const app = express();
 
-app.use(morgan('dev'));
+const morganSetting = process.env.NODE_ENV === 'production' ? 'tiny' : 'common'
+app.use(morgan(morganSetting));
 app.use(helmet())
 app.use(cors())
 app.use(function validateBearer(req, res, next) {
@@ -23,8 +24,16 @@ app.use(function validateBearer(req, res, next) {
         return res.status(401).json({message: 'Invalid Token'})
     }
     next();
-    res.json('Success!');
 })
+app.use((error, req, res, next) => {
+    let response
+    if (process.env.NODE_ENV === 'production') {
+      response = { error: { message: 'server error' }}
+    } else {
+      response = { error }
+    }
+    res.status(500).json(response)
+  })
 
 function handleTypes(req, res, next) {
     const { genre, country, avg_vote } = req.query;
@@ -46,7 +55,8 @@ function handleTypes(req, res, next) {
 
 app.get('/movie', handleTypes)
 
+const PORT = process.env.PORT || 8080
 
-app.listen(8080, () => {
-    console.log('Server Started on PORT 8080');
+app.listen(PORT, () => {
+    console.log(`Server Started on ${PORT}`);
 });
